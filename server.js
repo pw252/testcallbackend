@@ -17,6 +17,9 @@ const io = new Server(server, {
   },
 })
 
+app.get("/", (req, res) => {
+  res.send("Hello World!")
+})
 // Socket.io connection handling
 const rooms = {}
 
