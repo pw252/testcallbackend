@@ -6,14 +6,23 @@ const cors = require("cors")
 const app = express()
 app.use(cors())
 
-const server = http.createServer(app)
+app.use(
+  cors({
+    origin: "https://testcallclient-fsi7.vercel.app",
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
+const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
     origin: "https://testcallclient-fsi7.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },
-})
+});
 
 
 // Store connected users
