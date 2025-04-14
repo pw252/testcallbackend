@@ -30,7 +30,7 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id)
 
   // Register user
-socket.on("register", ({ userId, userName }) => {
+  socket.on("register", ({ userId, userName }) => {
     console.log(`User registered: ${userName} (${userId})`)
 
     // Store both ID and name
@@ -45,8 +45,8 @@ socket.on("register", ({ userId, userName }) => {
 
   // Handle call request
   socket.on("callUser", ({ to, from, signal }) => {
-    // Find socket ID for target user
-    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
+    // Find socket ID for target user - FIXED: compare with user.id
+    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
 
     console.log(`Call request from ${from} to ${to}`)
     console.log(`Signal data available: ${!!signal}`)
@@ -61,10 +61,10 @@ socket.on("register", ({ userId, userName }) => {
 
   // Handle call acceptance
   socket.on("acceptCall", ({ to, signal }) => {
-    // Find socket ID for target user
-    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
+    // Find socket ID for target user - FIXED: compare with user.id
+    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
 
-    console.log(`Call acceptance from ${users[socket.id]} to ${to}`)
+    console.log(`Call acceptance from ${users[socket.id].id} to ${to}`)
     console.log(`Signal data available: ${!!signal}`)
 
     if (targetSocketId) {
@@ -77,8 +77,8 @@ socket.on("register", ({ userId, userName }) => {
 
   // Handle call decline
   socket.on("declineCall", ({ to }) => {
-    // Find socket ID for target user
-    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
+    // Find socket ID for target user - FIXED: compare with user.id
+    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
 
     if (targetSocketId) {
       io.to(targetSocketId).emit("callDeclined")
@@ -87,8 +87,8 @@ socket.on("register", ({ userId, userName }) => {
 
   // Handle call end
   socket.on("endCall", ({ to }) => {
-    // Find socket ID for target user
-    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
+    // Find socket ID for target user - FIXED: compare with user.id
+    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
 
     if (targetSocketId) {
       io.to(targetSocketId).emit("callEnded")
