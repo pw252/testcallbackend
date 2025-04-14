@@ -6,7 +6,10 @@ const cors = require("cors")
 const app = express()
 app.use(
   cors({
-    origin: ["https://testcallclient-fsi7.vercel.app"],
+    origin: [
+      "https://testcallclient-fsi7.vercel.app",
+      "https://testcallclient.vercel.app",
+            ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
     allowedHeaders: "Content-Type,Authorization",
@@ -14,9 +17,14 @@ app.use(
 )
 const server = createServer(app)
 const io = new Server(server, {
-  cors: { origin: "https://testcallclient-fsi7.vercel.app", methods: ["GET", "POST"] },
+  cors: {
+    origin: [
+      "https://testcallclient-fsi7.vercel.app",
+      "https://testcallclient.vercel.app", // ← add this here too
+    ],
+    methods: ["GET", "POST"],
+  },
 })
-
 app.get("/", (req, res) => {
   res.send("Server is running")
 })
