@@ -9,7 +9,7 @@ app.use(cors())
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: "https://testcallclient-1ukd.vercel.app",
+    origin: "https://testcallclient-fsi7.vercel.app",
     methods: ["GET", "POST"],
   },
 })
