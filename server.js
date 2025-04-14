@@ -4,26 +4,18 @@ const { Server } = require("socket.io")
 const cors = require("cors")
 
 const app = express()
-app.use(cors())
-
 app.use(
   cors({
-    origin: "https://testcallclient-fsi7.vercel.app",
-    methods: ["GET", "POST"],
+    origin: ["https://testcallclient-fsi7.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-  })
-);
-
-const server = http.createServer(app);
-
+    allowedHeaders: "Content-Type,Authorization",
+  }),
+)
+const server = createServer(app)
 const io = new Server(server, {
-  cors: {
-    origin: "https://testcallclient-fsi7.vercel.app",
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
-
+  cors: { origin: "https://testcallclient-fsi7.vercel.app", methods: ["GET", "POST"] },
+})
 
 // Store connected users
 const users = {}
