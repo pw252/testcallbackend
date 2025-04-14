@@ -17,6 +17,10 @@ const io = new Server(server, {
   cors: { origin: "https://testcallclient-fsi7.vercel.app", methods: ["GET", "POST"] },
 })
 
+app.get("/", (req, res) => {
+  res.send("Server is running")
+})
+
 // Store connected users
 const users = {}
 
