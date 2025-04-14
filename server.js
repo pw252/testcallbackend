@@ -44,16 +44,16 @@ io.on("connection", (socket) => {
   })
 
   // Handle call request
-  socket.on("callUser", ({ to, from, signal }) => {
+  socket.on("callUser", ({ to, from, signal, isAudioOnly }) => {
     // Find socket ID for target user - FIXED: compare with user.id
     const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
 
-    console.log(`Call request from ${from} to ${to}`)
+    console.log(`Call request from ${from} to ${to} (Audio only: ${isAudioOnly ? "Yes" : "No"})`)
     console.log(`Signal data available: ${!!signal}`)
 
     if (targetSocketId) {
       console.log(`Target socket found: ${targetSocketId}`)
-      io.to(targetSocketId).emit("incomingCall", { from, signal })
+      io.to(targetSocketId).emit("incomingCall", { from, signal, isAudioOnly })
     } else {
       console.log(`Target user ${to} not found`)
     }
@@ -92,6 +92,16 @@ io.on("connection", (socket) => {
 
     if (targetSocketId) {
       io.to(targetSocketId).emit("callEnded")
+    }
+  })
+
+  // Handle screen sharing toggle
+  socket.on("screenShareToggled", ({ to, isScreenSharing, signal }) => {
+    // Find socket ID for target user
+    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("peerScreenShareToggled", { isScreenSharing, signal })
     }
   })
 
