@@ -4,12 +4,9 @@ const { Server } = require("socket.io")
 const cors = require("cors")
 
 const app = express()
-const server = http.createServer(app)
-
-// Configure CORS
 app.use(cors())
 
-// Create Socket.io server
+const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
     origin: "https://testcallclient-1ukd.vercel.app",
@@ -17,95 +14,89 @@ const io = new Server(server, {
   },
 })
 
-app.get("/", (req, res) => {
-  res.send("Hello World!")
-})
-// Socket.io connection handling
-const rooms = {}
+// Store connected users
+const users = {}
 
-// Socket.io connection handling
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id)
 
-  // Handle room joining
-  socket.on("join", (roomId) => {
-    console.log(`User ${socket.id} is joining room ${roomId}`)
+  // Register user
+socket.on("register", ({ userId, userName }) => {
+    console.log(`User registered: ${userName} (${userId})`)
 
-    // Create room if it doesn't exist
-    if (!rooms[roomId]) {
-      rooms[roomId] = [socket.id]
+    // Store both ID and name
+    users[socket.id] = {
+      id: userId,
+      name: userName,
+    }
 
-      // Join room
-      socket.join(roomId)
+    // Broadcast updated user list
+    io.emit("users", Object.values(users))
+  })
 
-      // Notify client they're the first one
-      socket.emit("joined", { isFirst: true })
-      console.log(`User ${socket.id} created room ${roomId}`)
-    } else if (rooms[roomId].length === 1) {
-      // Room exists with one participant
-      rooms[roomId].push(socket.id)
+  // Handle call request
+  socket.on("callUser", ({ to, from, signal }) => {
+    // Find socket ID for target user
+    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
 
-      // Join room
-      socket.join(roomId)
+    console.log(`Call request from ${from} to ${to}`)
+    console.log(`Signal data available: ${!!signal}`)
 
-      // Notify client they're the second one
-      socket.emit("joined", { isFirst: false })
-
-      // Notify first participant
-      socket.to(roomId).emit("user-connected")
-
-      console.log(`User ${socket.id} joined existing room ${roomId}`)
+    if (targetSocketId) {
+      console.log(`Target socket found: ${targetSocketId}`)
+      io.to(targetSocketId).emit("incomingCall", { from, signal })
     } else {
-      // Room is full (2+ participants)
-      socket.emit("full")
-      console.log(`User ${socket.id} tried to join full room ${roomId}`)
+      console.log(`Target user ${to} not found`)
     }
   })
 
-  // Handle WebRTC signaling
-  socket.on("offer", ({ roomId, offer }) => {
-    console.log(`User ${socket.id} sent offer in room ${roomId}`)
-    socket.to(roomId).emit("offer", offer)
+  // Handle call acceptance
+  socket.on("acceptCall", ({ to, signal }) => {
+    // Find socket ID for target user
+    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
+
+    console.log(`Call acceptance from ${users[socket.id]} to ${to}`)
+    console.log(`Signal data available: ${!!signal}`)
+
+    if (targetSocketId) {
+      console.log(`Target socket found: ${targetSocketId}`)
+      io.to(targetSocketId).emit("callAccepted", { signal })
+    } else {
+      console.log(`Target user ${to} not found`)
+    }
   })
 
-  socket.on("answer", ({ roomId, answer }) => {
-    console.log(`User ${socket.id} sent answer in room ${roomId}`)
-    socket.to(roomId).emit("answer", answer)
+  // Handle call decline
+  socket.on("declineCall", ({ to }) => {
+    // Find socket ID for target user
+    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("callDeclined")
+    }
   })
 
-  socket.on("ice-candidate", ({ roomId, candidate }) => {
-    socket.to(roomId).emit("ice-candidate", candidate)
+  // Handle call end
+  socket.on("endCall", ({ to }) => {
+    // Find socket ID for target user
+    const targetSocketId = Object.keys(users).find((key) => users[key] === to)
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("callEnded")
+    }
   })
 
   // Handle disconnection
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id)
+    delete users[socket.id]
 
-    // Find all rooms this user was in
-    Object.keys(rooms).forEach((roomId) => {
-      if (rooms[roomId] && rooms[roomId].includes(socket.id)) {
-        // Remove user from room
-        rooms[roomId] = rooms[roomId].filter((id) => id !== socket.id)
-
-        // Notify others that user left
-        socket.to(roomId).emit("user-disconnected")
-
-        console.log(`User ${socket.id} left room ${roomId}`)
-
-        // Clean up empty rooms
-        if (rooms[roomId].length === 0) {
-          delete rooms[roomId]
-          console.log(`Room ${roomId} deleted (empty)`)
-        }
-      }
-    })
+    // Broadcast updated user list
+    io.emit("users", Object.values(users))
   })
 })
 
-// Start server
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 server.listen(PORT, () => {
-  console.log(`Signaling server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`)
 })
-
-module.exports = server
