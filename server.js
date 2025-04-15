@@ -38,26 +38,31 @@ io.on("connection", (socket) => {
       id: userId,
       name: userName,
     }
-
     // Broadcast updated user list
     io.emit("users", Object.values(users))
   })
 
   // Handle call request
   socket.on("callUser", ({ to, from, signal, isAudioOnly }) => {
-    // Find socket ID for target user - FIXED: compare with user.id
-    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
-
-    console.log(`Call request from ${from} to ${to} (Audio only: ${isAudioOnly ? "Yes" : "No"})`)
+    // Find the name of the caller based on `from` (which is an ID)
+    const fromUser = Object.values(users).find(user => user.id === from)
+    const callerName = fromUser ? fromUser.name : "Unknown"
+  
+    // Log caller info
+    console.log(`Call request from ${callerName} (${from}) to ${to} (Audio only: ${isAudioOnly ? "Yes" : "No"})`)
     console.log(`Signal data available: ${!!signal}`)
-
+  
+    // Find socket ID of the target user based on `to`
+    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
+  
     if (targetSocketId) {
-      console.log(`Target socket found: ${targetSocketId}`)
-      io.to(targetSocketId).emit("incomingCall", { from, signal, isAudioOnly })
+      console.log(`Target socket found: ${targetSocketId} #`)
+      io.to(targetSocketId).emit("incomingCall", { from,callerName,signal, isAudioOnly })
     } else {
       console.log(`Target user ${to} not found`)
     }
   })
+  
 
   // Handle call acceptance
   socket.on("acceptCall", ({ to, signal }) => {
@@ -95,15 +100,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  // Handle screen sharing toggle
-  socket.on("screenShareToggled", ({ to, isScreenSharing, signal }) => {
-    // Find socket ID for target user
-    const targetSocketId = Object.keys(users).find((key) => users[key].id === to)
-
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("peerScreenShareToggled", { isScreenSharing, signal })
-    }
-  })
 
   // Handle disconnection
   socket.on("disconnect", () => {
